@@ -163,10 +163,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return list_voices(s)
 
     # ------------------------------------------------------------------
-    # STT endpoint  POST /stt
+    # STT endpoint  POST /api/speech/stt
     # ------------------------------------------------------------------
 
-    @app.post("/stt", response_model=STTResponse)
+    @app.post("/api/speech/stt", response_model=STTResponse)
     def stt(req: STTRequest, s: Settings = Depends(get_settings)):
         audio_base64 = (req.audioBase64 or "").strip()
         if not audio_base64:

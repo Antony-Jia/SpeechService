@@ -119,7 +119,7 @@
   <div id="panel-stt" class="panel">
     <div class="card">
       <h2>STT 接口测试</h2>
-      <div class="api-hint">POST {后端地址}/stt</div>
+      <div class="api-hint">POST {后端地址}/api/speech/stt</div>
 
       <div class="form-group">
         <label>音频来源</label>
@@ -309,7 +309,7 @@ async function doSTT() {
     const language = document.getElementById('sttLang').value.trim() || undefined;
     const body = { audioBase64, mimeType, ...(language ? { language } : {}) };
 
-    const res = await fetch(apiBase() + '/stt', {
+    const res = await fetch(apiBase() + '/api/speech/stt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

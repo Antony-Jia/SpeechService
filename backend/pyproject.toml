@@ -1,22 +1,23 @@
-[project]
-name = "speech-service"
-version = "0.1.0"
-description = "Combined TTS (IndexTTS) + STT (Whisper) REST API service"
-requires-python = ">=3.10,<3.13"
-dependencies = [
-  # TTS core — installs indextts from the official GitHub repo
-  # If you have a local clone, comment the line below and use the [tool.uv.sources] override
-  "indextts @ git+https://github.com/index-tts/index-tts.git",
+  [project]
+  name = "speech-service"
+  version = "0.1.0"
+  description = "Combined TTS (IndexTTS) + STT (Whisper) REST API service"
+  requires-python = ">=3.10,<3.13"
+  dependencies = [
+    # TTS core — installs indextts from the official GitHub repo
+    # If you have a local clone, comment the line below and use the [tool.uv.sources] override
+    # "indextts @ git+https://github.com/index-tts/index-tts.git",
+    "indextts",
 
-  # STT
-  "openai-whisper>=20231117",
+    # STT
+    "openai-whisper>=20231117",
 
-  # Web framework
-  "fastapi>=0.115.0",
-  "uvicorn[standard]>=0.30.0",
-  "pydantic>=2.7.0",
-  "pydantic-settings>=2.2.1",
-  "aiofiles>=24.1.0",
+    # Web framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.1",
+    "aiofiles>=24.1.0",
 
   # Text processing (Windows/Mac)
   "wetext>=0.0.9; sys_platform != 'linux'",
@@ -27,14 +28,17 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["speech_service"]
 
-# ── 如需使用本地 index-tts clone 而非 git 依赖，请：
-# 1. 将上方 dependencies 中 indextts 那一行注释掉
-# 2. 取消注释下方 indextts 那一行（修改路径到你本地的 index-tts 目录）
+  # ── 如需使用本地 index-tts clone 而非 git 依赖，请：
+  # 1. 将上方 dependencies 中 indextts 那一行注释掉
+  # 2. 取消注释下方 indextts 那一行（修改路径到你本地的 index-tts 目录）
 [tool.uv.sources]
-# indextts = { path = "../../IndexTTSService/index-tts", editable = true }
+indextts = { path = "../../IndexTTSService/index-tts", editable = true }
 torch = [
   { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]

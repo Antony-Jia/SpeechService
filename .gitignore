@@ -27,3 +27,5 @@ backend/speech_service/__pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+*.wav
