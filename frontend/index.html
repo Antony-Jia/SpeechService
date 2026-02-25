@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>语音服务测试</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    :root {
+      --primary: #4f46e5; --primary-dark: #4338ca; --primary-light: #e0e7ff;
+      --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+      --gray-300: #d1d5db; --gray-500: #6b7280; --gray-700: #374151; --gray-900: #111827;
+      --red: #ef4444; --green: #22c55e;
+      --radius: 0.5rem; --shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.5; }
+    .app { max-width: 860px; margin: 0 auto; padding: 2rem 1rem; }
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: 1.875rem; font-weight: 700; background: linear-gradient(135deg, var(--primary), #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    header p { color: var(--gray-500); margin-top: .25rem; }
+    .tabs { display: flex; gap: .5rem; background: white; border: 1px solid var(--gray-200); border-radius: 9999px; padding: .375rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+    .tab-btn { flex: 1; padding: .5rem 1rem; border: none; border-radius: 9999px; font-size: .875rem; font-weight: 500; cursor: pointer; background: transparent; color: var(--gray-500); transition: all .2s; }
+    .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(79,70,229,.3); }
+    .tab-btn:hover:not(.active) { background: var(--gray-100); color: var(--gray-700); }
+    .panel { display: none; } .panel.active { display: block; }
+    .card { background: white; border: 1px solid var(--gray-200); border-radius: .75rem; padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: var(--shadow); }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); padding-bottom: .75rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: .8125rem; font-weight: 500; color: var(--gray-700); margin-bottom: .375rem; }
+    input[type=text], select, textarea {
+      width: 100%; padding: .625rem .875rem; border: 1px solid var(--gray-300); border-radius: var(--radius);
+      font-size: .9rem; font-family: inherit; color: var(--gray-900); background: white;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input[type=text]:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+    input[type=file] { width: 100%; font-size: .875rem; }
+    .actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .6rem 1.25rem; border-radius: var(--radius); font-size: .875rem; font-weight: 500; border: 1px solid transparent; cursor: pointer; transition: all .2s; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:not(:disabled):hover { background: var(--primary-dark); }
+    .btn-secondary { background: white; border-color: var(--gray-300); color: var(--gray-700); }
+    .btn-secondary:not(:disabled):hover { background: var(--gray-50); border-color: var(--gray-400); }
+    .btn-record { background: white; border-color: var(--gray-300); color: var(--gray-700); }
+    .btn-record.recording { background: var(--red); border-color: var(--red); color: white; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.7; } }
+    .result-box { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; }
+    .result-box audio { width: 100%; margin-top: .25rem; }
+    .error-box { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: var(--radius); padding: .75rem 1rem; font-size: .875rem; margin-top: 1rem; }
+    .info { font-size: .8125rem; color: var(--gray-500); margin-top: .375rem; }
+    .badge { display: inline-block; padding: .125rem .5rem; border-radius: 9999px; font-size: .75rem; font-weight: 600; background: var(--primary-light); color: var(--primary); }
+    .api-hint { font-size: .75rem; color: var(--gray-500); font-family: monospace; margin-bottom: 1rem; }
+    .config-row { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .config-row label { margin: 0; white-space: nowrap; }
+    .config-row input { flex: 1; min-width: 200px; }
+    .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: white; border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>语音服务测试</h1>
+    <p>TTS（文字转语音）与 STT（语音转文字）接口测试工具</p>
+  </header>
+
+  <!-- API 地址配置 -->
+  <div class="card">
+    <h2>服务地址配置</h2>
+    <div class="config-row">
+      <label>后端地址</label>
+      <input type="text" id="apiBase" value="http://localhost:8080" placeholder="http://localhost:8080" />
+    </div>
+  </div>
+
+  <!-- 标签页 -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tts')">🔊 TTS 接口测试</button>
+    <button class="tab-btn" onclick="switchTab('stt')">🎤 STT 接口测试</button>
+  </div>
+
+  <!-- TTS Panel -->
+  <div id="panel-tts" class="panel active">
+    <div class="card">
+      <h2>TTS 接口测试</h2>
+      <div class="api-hint">POST {后端地址}/api/speech/tts</div>
+
+      <div class="form-group">
+        <label>声音 (voice) <span class="badge">可选</span></label>
+        <select id="ttsVoice">
+          <option value="">自动选择（使用第一个可用声音）</option>
+        </select>
+        <div class="info" id="voicePreviewArea"></div>
+      </div>
+
+      <div class="form-group">
+        <label>朗读文本 <span style="color:var(--red)">*</span></label>
+        <textarea id="ttsText" placeholder="请输入需要朗读的文本...">你好，欢迎使用本地语音合成服务。这是一段测试文字。</textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="loadVoices()">刷新声音列表</button>
+        <button class="btn btn-primary" id="ttsBtn" onclick="doTTS()">
+          <span id="ttsBtnText">生成音频</span>
+        </button>
+      </div>
+
+      <div id="ttsError" class="error-box" style="display:none"></div>
+      <div id="ttsResult" class="result-box" style="display:none">
+        <div style="font-size:.8125rem;font-weight:500;color:var(--gray-700);margin-bottom:.5rem">生成结果</div>
+        <audio id="ttsAudio" controls></audio>
+      </div>
+    </div>
+  </div>
+
+  <!-- STT Panel -->
+  <div id="panel-stt" class="panel">
+    <div class="card">
+      <h2>STT 接口测试</h2>
+      <div class="api-hint">POST {后端地址}/stt</div>
+
+      <div class="form-group">
+        <label>音频来源</label>
+        <div class="actions" style="margin-top:.5rem;margin-bottom:.75rem">
+          <button class="btn btn-record" id="recordBtn" onclick="toggleRecord()">🎤 开始录音</button>
+          <span id="recordStatus" style="font-size:.875rem;color:var(--gray-500)"></span>
+        </div>
+        <div class="info" style="margin-bottom:.75rem">或选择本地音频文件：</div>
+        <input type="file" id="sttFile" accept="audio/*" onchange="onFileChange()" />
+        <div class="info" id="sttFileName"></div>
+      </div>
+
+      <div class="form-group">
+        <label>mimeType</label>
+        <input type="text" id="sttMime" placeholder="audio/webm" />
+      </div>
+
+      <div class="form-group">
+        <label>识别语言 <span class="badge">可选</span></label>
+        <input type="text" id="sttLang" placeholder="例如 zh、en（留空自动检测）" />
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="sttBtn" onclick="doSTT()">
+          <span id="sttBtnText">开始识别</span>
+        </button>
+      </div>
+
+      <div id="sttError" class="error-box" style="display:none"></div>
+      <div id="sttResult" class="result-box" style="display:none">
+        <div style="font-size:.8125rem;font-weight:500;color:var(--gray-700);margin-bottom:.5rem">识别结果</div>
+        <div id="sttResultText" style="line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['tts','stt'][i] === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function apiBase() { return (document.getElementById('apiBase').value || 'http://localhost:8080').replace(/\/$/, ''); }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function setLoading(btnId, textId, loading, label) {
+  const btn = document.getElementById(btnId);
+  const txt = document.getElementById(textId);
+  btn.disabled = loading;
+  txt.innerHTML = loading ? '<span class="spinner"></span> ' + label : label.replace('中...', '').trim() || label;
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = '错误：' + msg;
+  el.style.display = 'block';
+}
+
+function hideError(id) { document.getElementById(id).style.display = 'none'; }
+
+// ── TTS ──────────────────────────────────────────────────────────────────────
+async function loadVoices() {
+  try {
+    const res = await fetch(apiBase() + '/api/voices');
+    if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+    const voices = await res.json();
+    const sel = document.getElementById('ttsVoice');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">自动选择（使用第一个可用声音）</option>';
+    voices.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.id; opt.textContent = v.name;
+      sel.appendChild(opt);
+    });
+    if (prev) sel.value = prev;
+    updateVoicePreview();
+  } catch (e) {
+    console.warn('loadVoices failed:', e);
+  }
+}
+
+function updateVoicePreview() {
+  const sel = document.getElementById('ttsVoice');
+  const area = document.getElementById('voicePreviewArea');
+  const voiceId = sel.value;
+  if (!voiceId) { area.innerHTML = ''; return; }
+  area.innerHTML = '<audio controls src="' + apiBase() + '/voices/' + encodeURIComponent(voiceId) + '.wav" style="width:100%;margin-top:6px"></audio>';
+}
+
+document.getElementById('ttsVoice').addEventListener('change', updateVoicePreview);
+document.getElementById('apiBase').addEventListener('change', () => { loadVoices(); updateVoicePreview(); });
+
+async function doTTS() {
+  hideError('ttsError');
+  document.getElementById('ttsResult').style.display = 'none';
+  const text = document.getElementById('ttsText').value.trim();
+  if (!text) { showError('ttsError', '请输入文本'); return; }
+
+  setLoading('ttsBtn', 'ttsBtnText', true, '生成中...');
+  try {
+    const voice = document.getElementById('ttsVoice').value;
+    const body = { text, ...(voice ? { voice } : {}) };
+    const res = await fetch(apiBase() + '/api/speech/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(t || res.statusText); }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = document.getElementById('ttsAudio');
+    if (audio._prevUrl) URL.revokeObjectURL(audio._prevUrl);
+    audio._prevUrl = url;
+    audio.src = url;
+    document.getElementById('ttsResult').style.display = 'block';
+  } catch (e) {
+    showError('ttsError', String(e));
+  } finally {
+    setLoading('ttsBtn', 'ttsBtnText', false, '生成音频');
+  }
+}
+
+// ── STT ──────────────────────────────────────────────────────────────────────
+let _mediaRecorder = null;
+let _audioChunks = [];
+let _audioFile = null;
+
+function onFileChange() {
+  const f = document.getElementById('sttFile').files[0];
+  _audioFile = f || null;
+  document.getElementById('sttFileName').textContent = f ? '已选择：' + f.name : '';
+  if (f) document.getElementById('sttMime').value = f.type || '';
+}
+
+async function toggleRecord() {
+  if (_mediaRecorder && _mediaRecorder.state === 'recording') {
+    _mediaRecorder.stop();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _mediaRecorder = new MediaRecorder(stream);
+    _audioChunks = [];
+    _mediaRecorder.ondataavailable = e => { if (e.data.size > 0) _audioChunks.push(e.data); };
+    _mediaRecorder.onstop = () => {
+      const blob = new Blob(_audioChunks, { type: _mediaRecorder.mimeType });
+      _audioFile = new File([blob], 'recording.webm', { type: _mediaRecorder.mimeType });
+      document.getElementById('sttFileName').textContent = '已录音：recording.webm (' + (blob.size / 1024).toFixed(1) + ' KB)';
+      document.getElementById('sttMime').value = _mediaRecorder.mimeType;
+      stream.getTracks().forEach(t => t.stop());
+      const btn = document.getElementById('recordBtn');
+      btn.classList.remove('recording');
+      btn.textContent = '🎤 开始录音';
+      document.getElementById('recordStatus').textContent = '';
+    };
+    _mediaRecorder.start();
+    const btn = document.getElementById('recordBtn');
+    btn.classList.add('recording');
+    btn.textContent = '⏹ 停止录音';
+    document.getElementById('recordStatus').textContent = '正在录音...';
+  } catch (e) {
+    showError('sttError', '无法访问麦克风：' + String(e));
+  }
+}
+
+function arrayBufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+async function doSTT() {
+  hideError('sttError');
+  document.getElementById('sttResult').style.display = 'none';
+  if (!_audioFile) { showError('sttError', '请录音或选择音频文件'); return; }
+
+  setLoading('sttBtn', 'sttBtnText', true, '识别中...');
+  try {
+    const buf = await _audioFile.arrayBuffer();
+    const audioBase64 = arrayBufferToBase64(buf);
+    const mimeType = document.getElementById('sttMime').value.trim() || _audioFile.type || 'audio/webm';
+    const language = document.getElementById('sttLang').value.trim() || undefined;
+    const body = { audioBase64, mimeType, ...(language ? { language } : {}) };
+
+    const res = await fetch(apiBase() + '/stt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(t || res.statusText); }
+    const data = await res.json();
+    document.getElementById('sttResultText').textContent = data.text || '（无识别内容）';
+    document.getElementById('sttResult').style.display = 'block';
+  } catch (e) {
+    showError('sttError', String(e));
+  } finally {
+    setLoading('sttBtn', 'sttBtnText', false, '开始识别');
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+loadVoices();
+</script>
+</body>
+</html>
