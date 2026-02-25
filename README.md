@@ -37,6 +37,8 @@ copy 你的音色文件.wav D:\Code\SpeechService\voices\
 
 ### 2. 安装依赖（首次或迁移后）
 
+> 推荐 Python 3.12（项目依赖当前不兼容 Python 3.13，可能在 `llvmlite` 构建时失败）。
+
 ```powershell
 cd D:\Code\SpeechService\backend
 uv sync
